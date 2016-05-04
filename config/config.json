@@ -1,0 +1,16 @@
+{
+	"development": {
+		"mysql":{
+			"mysqlConnectionString": "mysql://root:usbw@rtyertye.com/og",
+			"host": "rtyertye.com",
+			"user": "root",
+			"password": "usbw",
+			"port": "3307",
+			"database": "og"
+		}
+	},
+
+	"production": {
+		
+	}
+}

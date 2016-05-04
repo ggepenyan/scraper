@@ -1,0 +1,31 @@
+body {
+  padding: 50px;
+  font: 14px "Lucida Grande", Helvetica, Arial, sans-serif;
+}
+
+a {
+  color: #00B7FF;
+}
+.input_width{
+	max-width: 370px;
+}
+.textarea{
+	max-width: 435px;
+	resize: none;
+}
+.post_btn{
+	margin-top: 8px;
+}
+.comment{
+	margin-left: 3%;
+	background-color: #f7f7f7;
+}
+.comment_btn{
+	margin-left: 8px
+}
+.span_input{
+	font-size: 16px;
+}
+.remove_form{
+	display: inline-block;
+}

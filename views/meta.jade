@@ -1,0 +1,30 @@
+extends layout
+
+block content
+	if meta_dates
+		- meta_dates.reverse()
+		- meta_dates.map(function(elem){
+			p(style="font-weight:bolder")= elem[0]
+			- var image = elem[0].search('image')
+			if image !== -1
+				img(src="#{elem[1]}" height="100")
+			- var url = elem[0].search('url')
+			if url !== -1
+				a(href="#{elem[1]}" target="_blank") visit page
+			- var title = elem[0].search('title')
+			if title !== -1
+				br
+				span #{elem[1]}
+			- var descr = elem[0].search('description')
+			if descr !== -1
+				br
+				span #{elem[1]}
+			- var name = elem[0].search('site_name')
+			if name !== -1
+				br
+				span #{elem[1]}
+		- })
+//- p #{meta_dates}
+//- form(method="post" action="/scrape")
+//- 	textarea(name="cont", placeholder="enter any website url")
+	button submit
