@@ -9,16 +9,34 @@ module.exports = function(sequelize, DataTypes) {
 		image:{
 			type: DataTypes.STRING
 		},
-		imagewidth:{
+		imageWidth:{
 			type: DataTypes.STRING
 		},
-		imageheight:{
+		imageHeight:{
 			type: DataTypes.STRING
 		},
-		sitename:{
+		siteName:{
 			type: DataTypes.STRING
 		},
 		type:{
+			type: DataTypes.STRING
+		},
+		viewCount:{
+			type: DataTypes.STRING
+		},
+		likeCount:{
+			type: DataTypes.STRING
+		},
+		dislikeCount:{
+			type: DataTypes.STRING
+		},
+		favoriteCount:{
+			type: DataTypes.STRING
+		},
+		commentCount:{
+			type: DataTypes.STRING
+		},
+		publishedAt:{
 			type: DataTypes.STRING
 		},
 		url:{

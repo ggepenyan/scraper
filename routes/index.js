@@ -18,12 +18,11 @@ var express = require('express'),
 var YouTube = require('youtube-node');
 
 var youTube = new YouTube();
-
 router.get('/scrape', function (req, res, next) {
 
-// youTube.setKey('AIzaSyAV_bBoijsUtUsa_fEKTM8OaBZsxCOwM1o');
+// youTube.setKey('AIzaSyB1OOSpTREs85WUMvIgJvLTZKye4BVsoFU');
 
-// youTube.search('World War Trailer', 2, function(error, result) {
+// youTube.getById('VPq2BI0mJi8', function(error, result) {
 //   if (error) {
 //     console.log(error);
 //   }
@@ -103,30 +102,104 @@ router.get('/scrape', function (req, res, next) {
 						console.log('done')
 					})
 					var image = sizeOf('./public/images/image.jpg')
-					og_dates.image_width = image.width
-					og_dates.image_height = image.height
-					return models.Ogs.create({
-						'url': og_dates.url || null,
-						'title': og_dates.title || null,
-						'description': og_dates.descr || null,
-						'sitename': og_dates.name || null,
-						'type': og_dates.type || null,
-						'image': og_dates.image || null,
-						'imageheight': og_dates.image_width || null,
-						'imagewidth': og_dates.image_height || null,
-						'link': url
-					}).then(og => {
-						res.json({
-							link: og.url,
-							title: og.title,
-							description: og.description,
-							type: og.type,
-							image: og.image,
-							imagewidth: og.imagewidth,
-							imageheight: og.imageheight,
-							sitename: og.sitename
-						})
-					})
+					og_dates.imageWidth = image.width
+					og_dates.imageHeight = image.height
+					if (og_dates.type == 'video' && og_dates.name == 'YouTube'){
+						id = $('body meta[itemprop^=videoId]')['0'].attribs.content
+						
+						youTube.setKey('AIzaSyB1OOSpTREs85WUMvIgJvLTZKye4BVsoFU')
+						function youTubeGetByIdPromise(id) {
+							return new Promise(function(resolve, reject) {
+								youTube.getById(id, function(error, result) {
+									if (error) {
+										console.log(error)
+									}
+									else {
+										statistics = result.items[0]['statistics']
+
+										og_dates.viewCount = statistics.viewCount
+										og_dates.likeCount = statistics.likeCount
+										og_dates.dislikeCount = statistics.dislikeCount
+										og_dates.favoriteCount = statistics.favoriteCount
+										og_dates.commentCount = statistics.commentCount
+										og_dates.publishedAt = result.items[0]['snippet']['publishedAt']
+										// console.log(JSON.stringify(result.items[0], null, 2))
+										// console.log(og_dates)
+										resolve(og_dates)
+									}
+								})
+							}).then(result => {
+								console.log(result)
+							})
+						}
+						k = youTubeGetByIdPromise(id)
+						// console.log(k)
+						// youTube.getById(id, function(error, result) {
+						// 	if (error) {
+						// 		console.log(error)
+						// 	}
+						// 	else {
+						// 		statistics = result.items[0]['statistics']
+
+						// 		og_dates.viewCount = statistics.viewCount
+						// 		og_dates.likeCount = statistics.likeCount
+						// 		og_dates.dislikeCount = statistics.dislikeCount
+						// 		og_dates.favoriteCount = statistics.favoriteCount
+						// 		og_dates.commentCount = statistics.commentCount
+						// 		og_dates.publishedAt = result.items[0]['snippet']['publishedAt']
+						// 		// console.log(JSON.stringify(result.items[0], null, 2))
+						// 	}
+						// })
+						console.log(og_dates)
+					}
+					// return models.Ogs.create({
+					// 	'url': og_dates.url || null,
+					// 	'title': og_dates.title || null,
+					// 	'description': og_dates.descr || null,
+					// 	'sitename': og_dates.name || null,
+					// 	'type': og_dates.type || null,
+					// 	'image': og_dates.image || null,
+					// 	'imageheight': og_dates.imageWidth || null,
+					// 	'imagewidth': og_dates.imageHeight || null,
+					// 	'viewCount': og_dates.viewCount || null,
+					// 	'likeCount': og_dates.likeCount || null,
+					// 	'dislikeCount': og_dates.dislikeCount || null,
+					// 	'favoriteCount': og_dates.favoriteCount || null,
+					// 	'commentCount': og_dates.commentCount || null,
+					// 	'publishedAt': og_dates.publishedAt || null,
+					// 	'link': url
+					// }).then(og => {
+					// 	console.log(og)
+						// if (og.type == 'video' && og.sitename == 'YouTube'){
+						// 	res.json({
+						// 		link: og.url,
+						// 		title: og.title,
+						// 		description: og.description,
+						// 		type: og.type,
+						// 		image: og.image,
+						// 		imagewidth: og.imagewidth,
+						// 		imageheight: og.imageheight,
+						// 		sitename: og.sitename,
+						// 		viewCount: og.viewCount,
+						// 		likeCount: og.likeCount,
+						// 		dislikeCount: og.dislikeCount,
+						// 		favoriteCount: og.favoriteCount,
+						// 		commentCount: og.commentCount,
+						// 		publishedAt: og.publishedAt,
+						// 	})
+						// } else {
+						// 	res.json({
+						// 		link: og.url,
+						// 		title: og.title,
+						// 		description: og.description,
+						// 		type: og.type,
+						// 		image: og.image,
+						// 		imagewidth: og.imagewidth,
+						// 		imageheight: og.imageheight,
+						// 		sitename: og.sitename
+						// 	})
+						// }
+					// })
 				})
 			} else {
 				res.json({
@@ -135,9 +208,9 @@ router.get('/scrape', function (req, res, next) {
 					description: ogdates.description,
 					type: ogdates.type,
 					image: ogdates.image,
-					imagewidth: ogdates.imagewidth,
-					imageheight: ogdates.imageheight,
-					sitename: ogdates.sitename
+					imagewidth: ogdates.imageWidth,
+					imageheight: ogdates.imageHeight,
+					sitename: ogdates.siteName
 				})
 			}
 		}).catch(function (error) {
