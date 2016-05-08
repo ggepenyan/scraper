@@ -20,16 +20,6 @@ var YouTube = require('youtube-node');
 var youTube = new YouTube();
 router.get('/scrape', function (req, res, next) {
 
-// youTube.setKey('AIzaSyB1OOSpTREs85WUMvIgJvLTZKye4BVsoFU');
-
-// youTube.getById('VPq2BI0mJi8', function(error, result) {
-//   if (error) {
-//     console.log(error);
-//   }
-//   else {
-//     console.log(JSON.stringify(result, null, 2));
-//   }
-// });
 	if (req.query.q) {
 		var url = req.query.q
 		var exp = /(\b(https?|ftp|file):\/\/[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/%=~_|])/ig;
@@ -51,10 +41,8 @@ router.get('/scrape', function (req, res, next) {
 						return cheerio.load(body);
 					}
 				}
+				meta_og = []
 				request(options).then(function ($) {
-
-					meta_og = []
-
 					for (var i = $('head meta[property^=og]').length - 1; i >= 0; i--) {
 						var elem = i + ''
 
@@ -91,13 +79,9 @@ router.get('/scrape', function (req, res, next) {
 					console.log(og_dates.image)
 					var download = function(uri, filename, callback){
 						request.head(uri, function(err, res, body){
-							console.log('content-type:', res.headers['content-type'])
-							console.log('content-length:', res.headers['content-length'])
-
 							request(uri).pipe(fs.createWriteStream(filename)).on('close', callback)
 						})
 					}
-
 					download(og_dates.image, './public/images/image.jpg', function(){
 						console.log('done')
 					})
@@ -116,20 +100,18 @@ router.get('/scrape', function (req, res, next) {
 									}
 									else {
 										statistics = result.items[0]['statistics']
-
+										console.log(result.items[0])
 										og_dates.viewCount = statistics.viewCount
-										og_dates.likeCount = statistics.likeCount
 										og_dates.dislikeCount = statistics.dislikeCount
-										og_dates.favoriteCount = statistics.favoriteCount
+										og_dates.likeCount = statistics.favoriteCount
 										og_dates.commentCount = statistics.commentCount
 										og_dates.publishedAt = result.items[0]['snippet']['publishedAt']
-										// console.log(JSON.stringify(result.items[0], null, 2))
-										// console.log(og_dates)
+										
 										resolve(og_dates)
 									}
 								})
-							}).then(result => {
-								console.log(result)
+							}).then(dates => {
+								create_dates_db(dates)
 							})
 						}
 						k = youTubeGetByIdPromise(id)
@@ -150,149 +132,70 @@ router.get('/scrape', function (req, res, next) {
 						// 		// console.log(JSON.stringify(result.items[0], null, 2))
 						// 	}
 						// })
-						console.log(og_dates)
+						// console.log(og_dates)
+					} else {
+						create_dates_db(og_dates)
 					}
-					// return models.Ogs.create({
-					// 	'url': og_dates.url || null,
-					// 	'title': og_dates.title || null,
-					// 	'description': og_dates.descr || null,
-					// 	'sitename': og_dates.name || null,
-					// 	'type': og_dates.type || null,
-					// 	'image': og_dates.image || null,
-					// 	'imageheight': og_dates.imageWidth || null,
-					// 	'imagewidth': og_dates.imageHeight || null,
-					// 	'viewCount': og_dates.viewCount || null,
-					// 	'likeCount': og_dates.likeCount || null,
-					// 	'dislikeCount': og_dates.dislikeCount || null,
-					// 	'favoriteCount': og_dates.favoriteCount || null,
-					// 	'commentCount': og_dates.commentCount || null,
-					// 	'publishedAt': og_dates.publishedAt || null,
-					// 	'link': url
-					// }).then(og => {
-					// 	console.log(og)
-						// if (og.type == 'video' && og.sitename == 'YouTube'){
-						// 	res.json({
-						// 		link: og.url,
-						// 		title: og.title,
-						// 		description: og.description,
-						// 		type: og.type,
-						// 		image: og.image,
-						// 		imagewidth: og.imagewidth,
-						// 		imageheight: og.imageheight,
-						// 		sitename: og.sitename,
-						// 		viewCount: og.viewCount,
-						// 		likeCount: og.likeCount,
-						// 		dislikeCount: og.dislikeCount,
-						// 		favoriteCount: og.favoriteCount,
-						// 		commentCount: og.commentCount,
-						// 		publishedAt: og.publishedAt,
-						// 	})
-						// } else {
-						// 	res.json({
-						// 		link: og.url,
-						// 		title: og.title,
-						// 		description: og.description,
-						// 		type: og.type,
-						// 		image: og.image,
-						// 		imagewidth: og.imagewidth,
-						// 		imageheight: og.imageheight,
-						// 		sitename: og.sitename
-						// 	})
-						// }
-					// })
 				})
+				console.log(meta_og)
 			} else {
-				res.json({
-					link: ogdates.url,
-					title: ogdates.title,
-					description: ogdates.description,
-					type: ogdates.type,
-					image: ogdates.image,
-					imagewidth: ogdates.imageWidth,
-					imageheight: ogdates.imageHeight,
-					sitename: ogdates.siteName
+				show_dates(ogdates)
+			}
+			function create_dates_db(ogs) {
+				return models.Ogs.create({
+					'url': ogs.url || null,
+					'title': ogs.title || null,
+					'description': ogs.descr || null,
+					'siteName': ogs.name || null,
+					'type': ogs.type || null,
+					'image': ogs.image || null,
+					'imageHeight': ogs.imageWidth || null,
+					'imageWidth': ogs.imageHeight || null,
+					'viewCount': ogs.viewCount || null,
+					'likeCount': ogs.likeCount || null,
+					'dislikeCount': ogs.dislikeCount || null,
+					'commentCount': ogs.commentCount || null,
+					'publishedAt': ogs.publishedAt || null,
+					'link': url
+				}).then(og => {
+					show_dates(og)
 				})
+			}
+			function show_dates(ogdates) {
+				if (ogdates.type == 'video' && ogdates.siteName == 'YouTube'){
+					res.json({
+						link: ogdates.url,
+						title: ogdates.title,
+						description: ogdates.description,
+						type: ogdates.type,
+						image: ogdates.image,
+						imagewidth: ogdates.imagewidth,
+						imageheight: ogdates.imageheight,
+						sitename: ogdates.sitename,
+						viewCount: ogdates.viewCount,
+						likeCount: ogdates.likeCount,
+						dislikeCount: ogdates.dislikeCount,
+						commentCount: ogdates.commentCount,
+						publishedAt: ogdates.publishedAt,
+					})
+				} else {
+					res.json({
+						link: ogdates.url,
+						title: ogdates.title,
+						description: ogdates.description,
+						type: ogdates.type,
+						image: ogdates.image,
+						imagewidth: ogdates.imagewidth,
+						imageheight: ogdates.imageheight,
+						sitename: ogdates.sitename
+					})
+				}
 			}
 		}).catch(function (error) {
 			next(error)
 		})
-		}
+	}
 	res.send('index')
 })
-
-// router.post('/scrape', function (req, res, next) {
-// 	if (!req.body.cont || req.body.cont == '') {
-// 		return res.redirect('/scrape')
-// 	}
-// 	var url = req.body.cont
-// 	var exp = /(\b(https?|ftp|file):\/\/[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/%=~_|])/ig
-// 	url = url.replace(exp,"<a href=\"$1\" target=\"_blank\">visit page</a>")
-// 	var str = url.search('<a href')
-// 	if (str == -1) {
-// 		return
-// 	}
-// 	return models.Ogs.findOne({
-// 		where: {
-// 			link: req.body.cont
-// 		}
-// 	}).then(ogdates => {
-// 		if (ogdates == null) {
-// 			var options = {
-// 				uri: req.body.cont,
-// 				transform: function (body) {
-// 					return cheerio.load(body);
-// 				}
-// 			}
-// 			request(options).then(function ($) {
-
-// 				meta_og = []
-
-// 				for (var i = $('head meta[property^=og]').length - 1; i >= 0; i--) {
-// 					var elem = i + ''
-
-// 					var meta_attribs = $('head meta[property^=og]')[elem].attribs
-
-// 					meta_og.push([meta_attribs.property, meta_attribs.content])
-// 				}
-// 				res.render('index',{
-// 					meta_dates: meta_og
-// 				})
-// 				og_dates = {}
-// 				meta_og.map(function (elem) {
-// 					var url = elem[0].search('url')
-// 					if (url !== -1)
-// 						og_dates.url = elem[1]
-
-// 					var title = elem[0].search('title')
-// 					if (title !== -1)
-// 						og_dates.title = elem[1]
-
-// 					var descr = elem[0].search('description')
-// 					if (descr !== -1)
-// 						og_dates.descr = elem[1]
-
-// 					var name = elem[0].search('site_name')
-// 					if (name !== -1)
-// 						og_dates.name = elem[1]
-// 				})
-// 				return models.Ogs.create({
-// 					'url': og_dates.url || null,
-// 					'title': og_dates.title || null,
-// 					'description': og_dates.descr || null,
-// 					'sitename': og_dates.name || null,
-// 					'link': req.body.cont
-// 				})
-// 			})
-// 		} else {
-// 			res.render('index',{
-// 				meta_dates: ogdates,
-// 				db: true
-// 			})
-// 		}
-// 	}).catch(function (error) {
-// 		next(error)
-// 	})
-// 	console.log(url)
-// })
 
 module.exports = router

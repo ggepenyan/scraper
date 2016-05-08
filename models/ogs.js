@@ -30,9 +30,6 @@ module.exports = function(sequelize, DataTypes) {
 		dislikeCount:{
 			type: DataTypes.STRING
 		},
-		favoriteCount:{
-			type: DataTypes.STRING
-		},
 		commentCount:{
 			type: DataTypes.STRING
 		},
