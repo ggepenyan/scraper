@@ -34,109 +34,127 @@ router.get('/scrape', function (req, res, next) {
 			where: {
 				link: url
 			}
-		}).then(ogdates => {
-			if (ogdates == null) {
+		}).then(ogDatas => {
+			if (ogDatas == null) {
 				var options = {
 					uri: url,
 					transform: function (body) {
 						return cheerio.load(body);
 					}
 				}
-				meta_og = []
+				metaOgs = []
 				
-				request_fun(options, url, res)
+				requestFun(options, url, res)
 			} else {
-				show_dates(ogdates, res)
+				showDatas(ogDatas, res)
 			}
 		}).catch(function (error) {
 			next(error)
 		})
 	}
-	res.send('index')
 })
-function request_fun(options, url, res) {
+function requestFun(options, url, res) {
 	request(options).then(function ($) {
 		for (var i = $('head meta[property^=og]').length - 1; i >= 0; i--) {
 			var elem = i + ''
 
-			var meta_attribs = $('head meta[property^=og]')[elem].attribs
+			var metaAttribs = $('head meta[property^=og]')[elem].attribs
 
-			meta_og.push([meta_attribs.property, meta_attribs.content])
+			metaOgs.push([metaAttribs.property, metaAttribs.content])
 		}
-		og_dates = {}
-		og_dates_add(meta_og)
-		var download = function(uri, filename, callback){
-			request.head(uri, function(err, res, body){
-				request(uri).pipe(fs.createWriteStream(filename)).on('close', callback)
-			})
-		}
-		download(og_dates.image, './public/images/image.jpg', function(){
-			console.log('done')
+		ogDatas = {}
+		ogDatasAdd(metaOgs)
+
+		download(ogDatas.image, './public/images/image.jpg', function(){
+			var image = sizeOf('./public/images/image.jpg')
+			ogDatas.imageWidth = image.width
+			ogDatas.imageHeight = image.height
 		})
-		var image = sizeOf('./public/images/image.jpg')
-		og_dates.imageWidth = image.width
-		og_dates.imageHeight = image.height
 		
-		if (og_dates.type == 'video' && og_dates.name == 'YouTube'){
+		if (ogDatas.type == 'video' && ogDatas.name == 'YouTube'){
 			id = $('body meta[itemprop^=videoId]')['0'].attribs.content
 			
 			youTube.setKey('AIzaSyB1OOSpTREs85WUMvIgJvLTZKye4BVsoFU')
 			
-			k = youTubeGetByIdPromise(id, url, res)
+			k = youTubeGetByIdPromise(id, res)
 		} else {
-			create_dates_db(og_dates, url, res)
+			createDatasDb(ogDatas, res)
 		}
 	})
 }
-function youTubeGetByIdPromise(id, url, res) {
+function download(uri, fileName, callback){
+	request.head(uri, function(err, res, body){
+		request(uri).pipe(fs.createWriteStream(fileName)).on('close', callback)
+	})
+}
+function youTubeGetByIdPromise(id, res) {
 	return new Promise(function(resolve, reject) {
 		youTube.getById(id, function(error, result) {
 			if (error) {
 				console.log(error)
+				return reject(error)
 			}
 			else {
 				statistics = result.items[0]['statistics']
-				og_dates.viewCount = statistics.viewCount
-				og_dates.dislikeCount = statistics.dislikeCount
-				og_dates.likeCount = statistics.favoriteCount
-				og_dates.commentCount = statistics.commentCount
-				og_dates.publishedAt = result.items[0]['snippet']['publishedAt']
+				ogDatas.viewCount = statistics.viewCount
+				ogDatas.dislikeCount = statistics.dislikeCount
+				ogDatas.likeCount = statistics.favoriteCount
+				ogDatas.commentCount = statistics.commentCount
+				ogDatas.publishedAt = result.items[0]['snippet']['publishedAt']
 				
-				resolve(og_dates)
+				resolve(ogDatas)
 			}
 		})
-	}).then(dates => {
-		create_dates_db(dates, url, res)
+	}).then(datasObj => {
+		return models.Ogs.findOne({
+			where: {
+				url: datasObj.url
+			}
+		}).then(datasOg => {
+			if (datasOg == null) {
+				createDatasDb(datasObj, res)
+			} else {
+				showDatas(datasOg, res)
+			}
+		})
+	}).catch(error => {
+		next(error)
 	})
 }
-function og_dates_add(meta_og) {
-	meta_og.map(function (elem) {
+function ogDatasAdd(metaOgs) {
+	metaOgs.map(function (elem) {
 		var url = elem[0].search('url')
-		if (url !== -1)
-			og_dates.url = elem[1]
-		
+		if (url !== -1){
+			ogDatas.url = elem[1]
+		}
+
 		var image = elem[0].search('image')
-		if (image !== -1)
-			og_dates.image = elem[1]
+		if (image !== -1){
+			ogDatas.image = elem[1]
+		}
 
 		var type = elem[0].search('type')
-		if (type !== -1)
-			og_dates.type = elem[1]
+		if (type !== -1){
+			ogDatas.type = elem[1]
+		}
 
 		var title = elem[0].search('title')
-		if (title !== -1)
-			og_dates.title = elem[1]
+		if (title !== -1){
+			ogDatas.title = elem[1]
+		}
 
 		var descr = elem[0].search('description')
-		if (descr !== -1)
-			og_dates.descr = elem[1]
+		if (descr !== -1){
+			ogDatas.descr = elem[1]
+		}
 
 		var name = elem[0].search('site_name')
-		if (name !== -1)
-			og_dates.name = elem[1]
+		if (name !== -1){
+			ogDatas.name = elem[1]
+		}
 	})
 }
-function create_dates_db(ogs, url, res) {
+function createDatasDb(ogs, res) {
 	return models.Ogs.create({
 		'url': ogs.url || null,
 		'title': ogs.title || null,
@@ -150,39 +168,38 @@ function create_dates_db(ogs, url, res) {
 		'likeCount': ogs.likeCount || null,
 		'dislikeCount': ogs.dislikeCount || null,
 		'commentCount': ogs.commentCount || null,
-		'publishedAt': ogs.publishedAt || null,
-		'link': url
+		'publishedAt': ogs.publishedAt || null
 	}).then(og => {
-		show_dates(og, res)
+		showDatas(og, res)
 	})
 }
-function show_dates(ogdates, res) {
-	if (ogdates.type == 'video' && ogdates.siteName == 'YouTube'){
+function showDatas(ogDatas, res) {
+	if (ogDatas.type == 'video' && ogDatas.siteName == 'YouTube'){
 		res.json({
-			link: ogdates.url,
-			title: ogdates.title,
-			description: ogdates.description,
-			type: ogdates.type,
-			image: ogdates.image,
-			imagewidth: ogdates.imagewidth,
-			imageheight: ogdates.imageheight,
-			sitename: ogdates.sitename,
-			viewCount: ogdates.viewCount,
-			likeCount: ogdates.likeCount,
-			dislikeCount: ogdates.dislikeCount,
-			commentCount: ogdates.commentCount,
-			publishedAt: ogdates.publishedAt,
+			link: ogDatas.url,
+			title: ogDatas.title,
+			description: ogDatas.description,
+			siteName: ogDatas.siteName,
+			type: ogDatas.type,
+			image: ogDatas.image,
+			imageHeight: ogDatas.imageHeight,
+			imageWidth: ogDatas.imageWidth,
+			viewCount: ogDatas.viewCount,
+			likeCount: ogDatas.likeCount,
+			dislikeCount: ogDatas.dislikeCount,
+			commentCount: ogDatas.commentCount,
+			publishedAt: ogDatas.publishedAt,
 		})
 	} else {
 		res.json({
-			link: ogdates.url,
-			title: ogdates.title,
-			description: ogdates.description,
-			type: ogdates.type,
-			image: ogdates.image,
-			imagewidth: ogdates.imagewidth,
-			imageheight: ogdates.imageheight,
-			sitename: ogdates.sitename
+			link: ogDatas.url,
+			title: ogDatas.title,
+			description: ogDatas.description,
+			siteName: ogDatas.siteName,
+			type: ogDatas.type,
+			image: ogDatas.image,
+			imageHeight: ogDatas.imageHeight,
+			imageWidth: ogDatas.imageWidth
 		})
 	}
 }

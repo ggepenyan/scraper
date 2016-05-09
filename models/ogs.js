@@ -38,9 +38,6 @@ module.exports = function(sequelize, DataTypes) {
 		},
 		url:{
 			type: DataTypes.STRING
-		},
-		link:{
-			type: DataTypes.STRING
 		}
 	})
 	
