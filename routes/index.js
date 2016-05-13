@@ -27,7 +27,7 @@ router.get('/scrape', function (req, res, next) {
 		var link = url.replace(exp,"<a href=\"$1\" target=\"_blank\">visit page</a>")
 		var str = link.search('<a href')
 		if (str == -1) {
-			return
+			next()
 		}
 		console.log(url)
 		return models.Ogs.findOne({
@@ -44,16 +44,18 @@ router.get('/scrape', function (req, res, next) {
 				}
 				metaOgs = []
 				
-				requestFun(options, url, res)
+				sendRequestShowResult(options, url, res)
 			} else {
 				showDatas(ogDatas, res)
 			}
-		}).catch(function (error) {
+		}).catch(error => {
 			next(error)
 		})
+	} else {
+		next()
 	}
 })
-function requestFun(options, url, res) {
+function sendRequestShowResult(options, url, res) {
 	request(options).then(function ($) {
 		for (var i = $('head meta[property^=og]').length - 1; i >= 0; i--) {
 			var elem = i + ''
@@ -76,10 +78,13 @@ function requestFun(options, url, res) {
 			
 			youTube.setKey('AIzaSyB1OOSpTREs85WUMvIgJvLTZKye4BVsoFU')
 			
-			k = youTubeGetByIdPromise(id, res)
-		} else {
+			k = findVideoInsertDb(id, res)
+		} 
+		else {
 			createDatasDb(ogDatas, res)
 		}
+	}).catch(error => {
+		next(error)
 	})
 }
 function download(uri, fileName, callback){
@@ -87,7 +92,7 @@ function download(uri, fileName, callback){
 		request(uri).pipe(fs.createWriteStream(fileName)).on('close', callback)
 	})
 }
-function youTubeGetByIdPromise(id, res) {
+function findVideoInsertDb(id, res) {
 	return new Promise(function(resolve, reject) {
 		youTube.getById(id, function(error, result) {
 			if (error) {
@@ -155,22 +160,32 @@ function ogDatasAdd(metaOgs) {
 	})
 }
 function createDatasDb(ogs, res) {
-	return models.Ogs.create({
-		'url': ogs.url || null,
-		'title': ogs.title || null,
-		'description': ogs.descr || null,
-		'siteName': ogs.name || null,
-		'type': ogs.type || null,
-		'image': ogs.image || null,
-		'imageHeight': ogs.imageWidth || null,
-		'imageWidth': ogs.imageHeight || null,
-		'viewCount': ogs.viewCount || null,
-		'likeCount': ogs.likeCount || null,
-		'dislikeCount': ogs.dislikeCount || null,
-		'commentCount': ogs.commentCount || null,
-		'publishedAt': ogs.publishedAt || null
-	}).then(og => {
-		showDatas(og, res)
+	return models.Ogs.findOne({
+		where: {
+			url: ogs.url
+		}
+	}).then(datasOg => {
+		if (datasOg == null) {
+			return models.Ogs.create({
+				'url': ogs.url || null,
+				'title': ogs.title || null,
+				'description': ogs.descr || null,
+				'siteName': ogs.name || null,
+				'type': ogs.type || null,
+				'image': ogs.image || null,
+				'imageHeight': ogs.imageWidth || null,
+				'imageWidth': ogs.imageHeight || null,
+				'viewCount': ogs.viewCount || null,
+				'likeCount': ogs.likeCount || null,
+				'dislikeCount': ogs.dislikeCount || null,
+				'commentCount': ogs.commentCount || null,
+				'publishedAt': ogs.publishedAt || null
+			}).then(og => {
+				showDatas(og, res)
+			})
+		} else {
+			showDatas(datasOg, res)
+		}
 	})
 }
 function showDatas(ogDatas, res) {
