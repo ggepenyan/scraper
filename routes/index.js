@@ -29,7 +29,6 @@ router.get('/scrape', function (req, res, next) {
 		if (str == -1) {
 			next()
 		}
-		console.log(url)
 		return models.Ogs.findOne({
 			where: {
 				link: url
@@ -56,7 +55,7 @@ router.get('/scrape', function (req, res, next) {
 	}
 })
 function sendRequestShowResult(options, url, res) {
-	request(options).then(function ($) {
+	return request(options).then(function ($) {
 		for (var i = $('head meta[property^=og]').length - 1; i >= 0; i--) {
 			var elem = i + ''
 
@@ -83,24 +82,21 @@ function sendRequestShowResult(options, url, res) {
 		else {
 			createDatasDb(ogDatas, res)
 		}
-	}).catch(error => {
-		next(error)
 	})
 }
 function download(uri, fileName, callback){
-	request.head(uri, function(err, res, body){
-		request(uri).pipe(fs.createWriteStream(fileName)).on('close', callback)
+	return request.head(uri).then(result => {
+		return request(uri).pipe(fs.createWriteStream(fileName)).on('close', callback)
 	})
 }
 function findVideoInsertDb(id, res) {
 	return new Promise(function(resolve, reject) {
 		youTube.getById(id, function(error, result) {
 			if (error) {
-				console.log(error)
 				return reject(error)
 			}
 			else {
-				statistics = result.items[0]['statistics']
+				var statistics = result.items[0]['statistics']
 				ogDatas.viewCount = statistics.viewCount
 				ogDatas.dislikeCount = statistics.dislikeCount
 				ogDatas.likeCount = statistics.favoriteCount
@@ -122,8 +118,6 @@ function findVideoInsertDb(id, res) {
 				showDatas(datasOg, res)
 			}
 		})
-	}).catch(error => {
-		next(error)
 	})
 }
 function ogDatasAdd(metaOgs) {
